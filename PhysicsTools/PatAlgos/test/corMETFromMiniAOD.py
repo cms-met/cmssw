@@ -32,9 +32,11 @@ process.GlobalTag.globaltag = 'MCRUN2_74_v9'
 
 if usePrivateSQlite:
     from CondCore.DBCommon.CondDBSetup_cfi import *
+    import os
     era="Summer15_50nsV2_MC"
+    dBFile = os.path.expandvars("$CMSSW_BASE/src/PhysicsTools/PatAlgos/test/"+era+".db")
     process.jec = cms.ESSource("PoolDBESSource",CondDBSetup,
-                               connect = cms.string( "sqlite_file:PhysicsTools/PatAlgos/test/"+era+".db" ),
+                               connect = cms.string( "sqlite_file://"+dBFile ),
                                toGet =  cms.VPSet(
             cms.PSet(
                 record = cms.string("JetCorrectionsRecord"),
