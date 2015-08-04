@@ -22,12 +22,12 @@ process.options = cms.untracked.PSet(
 
 # How many events to process
 process.maxEvents = cms.untracked.PSet( 
-   input = cms.untracked.int32(-1)
+   input = cms.untracked.int32(100)
 )
 
 #configurable options =======================================================================
 usePrivateSQlite =True #use external JECs (sqlite file)
-useHFCandidates =False #use HF for MET and Type1 computation
+makeNoHFMet = True
 #===================================================================
 
 
@@ -73,26 +73,30 @@ process.source = cms.Source("PoolSource",
 ### ---------------------------------------------------------------------------
 ### Removing the HF from the MET computation
 ### ---------------------------------------------------------------------------
-pfCands="packedPFCandidates"
-if not useHFCandidates:
+
+from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
+runMetCorAndUncFromMiniAOD(process,
+                           isData=False,
+                           pfCandColl=cms.InputTag("packedPFCandidates")
+                           )
+
+if makeNoHFMet:
     process.noHFCands = cms.EDFilter("CandPtrSelector",
                                      src=cms.InputTag("packedPFCandidates"),
                                      cut=cms.string("pdgId!=1 && pdgId!=2 && abs(eta)<3.0")
                                      )
-    pfCands="noHFCands"
+    runMetCorAndUncFromMiniAOD(process,
+                               isData=False,
+                               pfCandColl=cms.InputTag("noHFCands"),
+                               postfix="NoHF"
+                               )
 
 #jets are rebuilt from those candidates by the tools, no need to do anything else
 ### =================================================================================
 
 
-from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
-
 #default configuration for miniAOD reprocessing, change the isData flag to run on data
 #for a full met computation, remove the pfCandColl input
-runMetCorAndUncFromMiniAOD(process,
-                           isData=False,
-                           pfCandColl=cms.InputTag(pfCands)
-                           )
 
 ### -------------------------------------------------------------------
 ### the lines below remove the L2L3 residual corrections when processing data
@@ -111,8 +115,8 @@ process.MINIAODSIMoutput = cms.OutputModule("PoolOutputModule",
     compressionLevel = cms.untracked.int32(4),
     compressionAlgorithm = cms.untracked.string('LZMA'),
     eventAutoFlushCompressedSize = cms.untracked.int32(15728640),
-    outputCommands = cms.untracked.vstring( "keep *_slimmedMETs_*_*",
-                                            "keep *_patPFMetT1Txy_*_*",
+    outputCommands = cms.untracked.vstring( "keep *_slimmedMET*_*_*",
+                                            "keep *_patPFMetT1Txy*_*_*",
                                             ),
     fileName = cms.untracked.string('corMETMiniAOD.root'),
     dataset = cms.untracked.PSet(
