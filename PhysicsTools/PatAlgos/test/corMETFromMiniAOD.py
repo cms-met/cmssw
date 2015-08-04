@@ -25,8 +25,14 @@ process.maxEvents = cms.untracked.PSet(
    input = cms.untracked.int32(20)
 )
 
-### =====================================================================================================
-usePrivateSQlite =True
+#configurable options =======================================================================
+usePrivateSQlite =True #use external JECs (sqlite file)
+useHFCandidates =False #use HF for MET and Type1 computation
+#===================================================================
+
+
+### External JECs =====================================================================================================
+
 from Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff import *
 process.GlobalTag.globaltag = 'MCRUN2_74_v9'
 
@@ -62,13 +68,35 @@ process.source = cms.Source("PoolSource",
     ])
 )
 
+
+
+### ---------------------------------------------------------------------------
+### Removing the HF from the MET computation
+### ---------------------------------------------------------------------------
+pfCands="packedPFCandidates"
+if not useHF:
+    process.noHFCands = cms.EDFilter("CandPtrSelector",
+                                     src=cms.InputTag("packedPFCandidates"),
+                                     cut=cms.string("pdgId!=1 && pdgId!=2")
+                                     )
+    pfCands="noHFCands"
+
+#jets are rebuilt from those candidates by the tools, no need to do anything else
+### =================================================================================
+
+
 from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
 
 #default configuration for miniAOD reprocessing, change the isData flag to run on data
-runMetCorAndUncFromMiniAOD(process, isData=False)
+#for a full met computation, remove the pfCandColl input
+runMetCorAndUncFromMiniAOD(process,
+                           isData=False,
+                           pfCandColl=cms.InputTag(pfCands)
+                           )
 
 ### -------------------------------------------------------------------
-### the lines below remove the L2L3 residual uncertainties when processing data
+### the lines below remove the L2L3 residual corrections when processing data
+### MM 081415: new recommendations, use the L2L3 residual corrections -> commentting
 ### -------------------------------------------------------------------
 process.patPFMetT1T2Corr.jetCorrLabelRes = cms.InputTag("L3Absolute")
 process.patPFMetT1T2SmearCorr.jetCorrLabelRes = cms.InputTag("L3Absolute")
