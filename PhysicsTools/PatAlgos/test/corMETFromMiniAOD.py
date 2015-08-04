@@ -75,7 +75,7 @@ pfCands="packedPFCandidates"
 if not useHF:
     process.noHFCands = cms.EDFilter("CandPtrSelector",
                                      src=cms.InputTag("packedPFCandidates"),
-                                     cut=cms.string("pdgId!=1 && pdgId!=2")
+                                     cut=cms.string("pdgId!=1 && pdgId!=2 && abs(eta)<3.0")
                                      )
     pfCands="noHFCands"
 
