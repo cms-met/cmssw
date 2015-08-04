@@ -22,7 +22,7 @@ process.options = cms.untracked.PSet(
 
 # How many events to process
 process.maxEvents = cms.untracked.PSet( 
-   input = cms.untracked.int32(20)
+   input = cms.untracked.int32(-1)
 )
 
 #configurable options =======================================================================
@@ -72,7 +72,7 @@ process.source = cms.Source("PoolSource",
 ### Removing the HF from the MET computation
 ### ---------------------------------------------------------------------------
 pfCands="packedPFCandidates"
-if not useHF:
+if not useHFCandidates:
     process.noHFCands = cms.EDFilter("CandPtrSelector",
                                      src=cms.InputTag("packedPFCandidates"),
                                      cut=cms.string("pdgId!=1 && pdgId!=2 && abs(eta)<3.0")
