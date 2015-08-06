@@ -38,9 +38,11 @@ process.GlobalTag.globaltag = 'MCRUN2_74_v9'
 
 if usePrivateSQlite:
     from CondCore.DBCommon.CondDBSetup_cfi import *
+    import os
     era="Summer15_50nsV2_MC"
+    dBFile = os.path.expandvars("$CMSSW_BASE/src/PhysicsTools/PatAlgos/test/"+era+".db")
     process.jec = cms.ESSource("PoolDBESSource",CondDBSetup,
-                               connect = cms.string( "sqlite_file:PhysicsTools/PatAlgos/test/"+era+".db" ),
+                               connect = cms.string( "sqlite_file://"+dBFile ),
                                toGet =  cms.VPSet(
             cms.PSet(
                 record = cms.string("JetCorrectionsRecord"),
@@ -75,7 +77,7 @@ pfCands="packedPFCandidates"
 if not useHFCandidates:
     process.noHFCands = cms.EDFilter("CandPtrSelector",
                                      src=cms.InputTag("packedPFCandidates"),
-                                     cut=cms.string("pdgId!=1 && pdgId!=2 && abs(eta)<3.0")
+                                     cut=cms.string("abs(pdgId)!=1 && abs(pdgId)!=2 && abs(eta)<3.0")
                                      )
     pfCands="noHFCands"
 
