@@ -26,8 +26,10 @@ process.maxEvents = cms.untracked.PSet(
 )
 
 #configurable options =======================================================================
-usePrivateSQlite =True #use external JECs (sqlite file)
-useHFCandidates =False #use HF for MET and Type1 computation
+runOnData=False #data/MC switch
+usePrivateSQlite=True #use external JECs (sqlite file)
+useHFCandidates=False #add a NoHF slimmed MET collection if the option is set to false
+applyResiduals=True #application of residual corrections. True is the official recommendation, False can be used to private tests or analysis developments
 #===================================================================
 
 
@@ -84,26 +86,39 @@ if not useHFCandidates:
 #jets are rebuilt from those candidates by the tools, no need to do anything else
 ### =================================================================================
 
-
 from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
 
 #default configuration for miniAOD reprocessing, change the isData flag to run on data
 #for a full met computation, remove the pfCandColl input
 runMetCorAndUncFromMiniAOD(process,
-                           isData=False,
-                           pfCandColl=cms.InputTag(pfCands)
+                           isData=runOnData,
                            )
+
+if not useHFCandidates:
+    runMetCorAndUncFromMiniAOD(process,
+                               isData=runOnData,
+                               pfCandColl=cms.InputTag(pfCands),
+                               postfix="NoHF"
+                               )
 
 ### -------------------------------------------------------------------
 ### the lines below remove the L2L3 residual corrections when processing data
-### MM 081415: new recommendations, use the L2L3 residual corrections -> commentting
 ### -------------------------------------------------------------------
-process.patPFMetT1T2Corr.jetCorrLabelRes = cms.InputTag("L3Absolute")
-process.patPFMetT1T2SmearCorr.jetCorrLabelRes = cms.InputTag("L3Absolute")
-process.patPFMetT2Corr.jetCorrLabelRes = cms.InputTag("L3Absolute")
-process.patPFMetT2SmearCorr.jetCorrLabelRes = cms.InputTag("L3Absolute")
-process.shiftedPatJetEnDown.jetCorrLabelUpToL3Res = cms.InputTag("ak4PFCHSL1FastL2L3Corrector")
-process.shiftedPatJetEnUp.jetCorrLabelUpToL3Res = cms.InputTag("ak4PFCHSL1FastL2L3Corrector")
+if not applyResiduals:
+    process.patPFMetT1T2Corr.jetCorrLabelRes = cms.InputTag("L3Absolute")
+    process.patPFMetT1T2SmearCorr.jetCorrLabelRes = cms.InputTag("L3Absolute")
+    process.patPFMetT2Corr.jetCorrLabelRes = cms.InputTag("L3Absolute")
+    process.patPFMetT2SmearCorr.jetCorrLabelRes = cms.InputTag("L3Absolute")
+    process.shiftedPatJetEnDown.jetCorrLabelUpToL3Res = cms.InputTag("ak4PFCHSL1FastL2L3Corrector")
+    process.shiftedPatJetEnUp.jetCorrLabelUpToL3Res = cms.InputTag("ak4PFCHSL1FastL2L3Corrector")
+
+    if not useHFCandidates:
+          process.patPFMetT1T2CorrNoHF.jetCorrLabelRes = cms.InputTag("L3Absolute")
+          process.patPFMetT1T2SmearCorrNoHF.jetCorrLabelRes = cms.InputTag("L3Absolute")
+          process.patPFMetT2CorrNoHF.jetCorrLabelRes = cms.InputTag("L3Absolute")
+          process.patPFMetT2SmearCorrNoHF.jetCorrLabelRes = cms.InputTag("L3Absolute")
+          process.shiftedPatJetEnDownNoHF.jetCorrLabelUpToL3Res = cms.InputTag("ak4PFCHSL1FastL2L3Corrector")
+          process.shiftedPatJetEnUpNoHF.jetCorrLabelUpToL3Res = cms.InputTag("ak4PFCHSL1FastL2L3Corrector")
 ### ------------------------------------------------------------------
 
 
@@ -112,7 +127,9 @@ process.MINIAODSIMoutput = cms.OutputModule("PoolOutputModule",
     compressionAlgorithm = cms.untracked.string('LZMA'),
     eventAutoFlushCompressedSize = cms.untracked.int32(15728640),
     outputCommands = cms.untracked.vstring( "keep *_slimmedMETs_*_*",
+                                            "keep *_slimmedMETsNoHF_*_*",
                                             "keep *_patPFMetT1Txy_*_*",
+                                            "keep *_patPFMetT1TxyNoHF_*_*",
                                             ),
     fileName = cms.untracked.string('corMETMiniAOD.root'),
     dataset = cms.untracked.PSet(
