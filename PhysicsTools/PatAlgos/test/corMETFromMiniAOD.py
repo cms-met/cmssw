@@ -75,13 +75,11 @@ process.source = cms.Source("PoolSource",
 ### ---------------------------------------------------------------------------
 ### Removing the HF from the MET computation
 ### ---------------------------------------------------------------------------
-pfCands="packedPFCandidates"
 if not useHFCandidates:
     process.noHFCands = cms.EDFilter("CandPtrSelector",
                                      src=cms.InputTag("packedPFCandidates"),
                                      cut=cms.string("abs(pdgId)!=1 && abs(pdgId)!=2 && abs(eta)<3.0")
                                      )
-    pfCands="noHFCands"
 
 #jets are rebuilt from those candidates by the tools, no need to do anything else
 ### =================================================================================
@@ -97,7 +95,7 @@ runMetCorAndUncFromMiniAOD(process,
 if not useHFCandidates:
     runMetCorAndUncFromMiniAOD(process,
                                isData=runOnData,
-                               pfCandColl=cms.InputTag(pfCands),
+                               pfCandColl=cms.InputTag("noHFCands"),
                                postfix="NoHF"
                                )
 
