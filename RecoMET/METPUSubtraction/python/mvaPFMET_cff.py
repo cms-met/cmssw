@@ -9,9 +9,21 @@ from JetMETCorrections.Configuration.DefaultJEC_cff import *
 ##     in case RecoTauTag/Configuration/python/RecoPFTauTag_cff.py is loaded by
 ##     by top-level cfg.py file before RecoMET/METPUSubtraction/python/mvaPFMET_cff.py gets loaded)
 ##from RecoJets.JetProducers.PileupJetIDCutParams_cfi import full_53x_wp
+##make a selection on eta according to the value defined
+etaCut = 3.0
+
+pfCandidatesForMET = cms.EDFilter("CandPtrSelector",
+    src = cms.InputTag("packedPFCandidates"),
+    cut = cms.string("abs(eta) < %f"%etaCut))
+
+from CommonTools.RecoAlgos.pfJetSelector_cfi import pfJetSelector
+ak4PFJetsForTypeI = pfJetSelector.clone(
+            src = cms.InputTag( "ak4PFJets" ),
+            cut = cms.string( "abs(eta)< %f"%(etaCut) )
+                )
 
 calibratedAK4PFJetsForPFMVAMEt = cms.EDProducer('PFJetCorrectionProducer',
-    src = cms.InputTag('ak4PFJets'),
+    src = cms.InputTag('ak4PFJetsForTypeI'),
     correctors = cms.vstring("ak4PFL1FastL2L3") # NOTE: use "ak5PFL1FastL2L3" for MC / "ak5PFL1FastL2L3Residual" for Data
 )
 
@@ -58,12 +70,11 @@ puJetIdForPFMVAMEt = pileupJetIdEvaluator.clone(
 
 
 
-
 pfMVAMEt = cms.EDProducer("PFMETProducerMVA",
     srcCorrJets = cms.InputTag('calibratedAK4PFJetsForPFMVAMEt'),
     srcUncorrJets = cms.InputTag('ak4PFJets'),
     srcMVAPileupJetId = cms.InputTag('puJetIdForPFMVAMEt','fullDiscriminant'),
-    srcPFCandidates = cms.InputTag('particleFlow'),
+    srcPFCandidates = cms.InputTag('pfCandidatesForMET'),
     srcVertices = cms.InputTag('offlinePrimaryVertices'),
     srcLeptons = cms.VInputTag(),#"isomuons","isoelectrons","isotaus") # NOTE: you need to set this to collections of electrons, muons and tau-jets
                                  #                                             passing the lepton reconstruction & identification criteria applied in your analysis
@@ -72,10 +83,10 @@ pfMVAMEt = cms.EDProducer("PFMETProducerMVA",
     globalThreshold = cms.double(-1.),#pfMet.globalThreshold,
     minCorrJetPt = cms.double(-1.),
     inputFileNames = cms.PSet(
-        U     = cms.FileInPath('RecoMET/METPUSubtraction/data/gbrmet_7_2_X_MINIAOD_BX25PU20_Mar2015.root'),
-        DPhi  = cms.FileInPath('RecoMET/METPUSubtraction/data/gbrphi_7_2_X_MINIAOD_BX25PU20_Mar2015.root'),
-        CovU1 = cms.FileInPath('RecoMET/METPUSubtraction/data/gbru1cov_7_2_X_MINIAOD_BX25PU20_Mar2015.root'),
-        CovU2 = cms.FileInPath('RecoMET/METPUSubtraction/data/gbru2cov_7_2_X_MINIAOD_BX25PU20_Mar2015.root')
+        U     = cms.FileInPath('RecoMET/METPUSubtraction/data/gbrmet_7_4_X_MINIAOD_BX50_MET3p0_Aug2015.root'),
+        DPhi  = cms.FileInPath('RecoMET/METPUSubtraction/data/gbrphi_7_4_X_MINIAOD_BX50_MET3p0_Aug2015.root'),
+        CovU1 = cms.FileInPath('RecoMET/METPUSubtraction/data/gbru1cov_7_4_X_MINIAOD_BX50_MET3p0_Aug2015.root'),
+        CovU2 = cms.FileInPath('RecoMET/METPUSubtraction/data/gbru2cov_7_4_X_MINIAOD_BX50_MET3p0_Aug2015.root')
     ),
     inputRecords = cms.PSet(
         U     = cms.string("RecoilCor"),
@@ -97,6 +108,8 @@ pfMVAMEt = cms.EDProducer("PFMETProducerMVA",
 pfMVAMEtSequence  = cms.Sequence(
     #(isomuonseq+isotauseq+isoelectronseq)*
     calibratedAK4PFJetsForPFMVAMEt*
+    pfCandidatesForMET *
+    ak4PFJetsForTypeI *
     puJetIdForPFMVAMEt*
     pfMVAMEt
 )
