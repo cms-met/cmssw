@@ -7,11 +7,17 @@ from CommonTools.RecoAlgos.HBHENoiseFilter_cfi import *
 ## The CSC beam halo tight filter ____________________________________________||
 from RecoMET.METFilters.CSCTightHaloFilter_cfi import *
 
+## The hcal problematic strip halo filter ____________________________________________||
+from RecoMET.METFilters.HcalStripHaloFilter_cfi import *
+
 ## The HCAL laser filter _____________________________________________________||
 from RecoMET.METFilters.hcalLaserEventFilter_cfi import *
 
 ## The ECAL dead cell trigger primitive filter _______________________________||
 from RecoMET.METFilters.EcalDeadCellTriggerPrimitiveFilter_cfi import *
+
+## The ECAL dead cell trigger primitive filter _______________________________||
+from RecoMET.METFilters.EcalDeadCellBoundaryEnergyFilter_cfi import *
 
 ## The EE bad SuperCrystal filter ____________________________________________||
 from RecoMET.METFilters.eeBadScFilter_cfi import *
@@ -29,6 +35,12 @@ goodVertices = cms.EDFilter(
 
 ## The tracking failure filter _______________________________________________||
 from RecoMET.METFilters.trackingFailureFilter_cfi import *
+
+##noscraping (outdated)_______________________________________________________||
+# from RecoMET.METFilters.scrapingFilter_cfi import *
+
+## The primary vertex filter__ _______________________________________________||
+# from RecoMET.METFilters.primaryVertexFilter_cfi import *
 
 ## The tracking POG filters __________________________________________________||
 from RecoMET.METFilters.trackingPOGFilters_cff import *
