@@ -14,7 +14,7 @@ etaCut = 3.0
 
 pfCandidatesForMET = cms.EDFilter("CandPtrSelector",
     src = cms.InputTag("packedPFCandidates"),
-    cut = cms.string("abs(eta) < %f"%etaCut))
+    cut = cms.string("abs(pdgId)!=1 && abs(pdgId)!=2 && abs(eta)<%f"%etaCut))
 
 from CommonTools.RecoAlgos.pfJetSelector_cfi import pfJetSelector
 ak4PFJetsForTypeI = pfJetSelector.clone(
