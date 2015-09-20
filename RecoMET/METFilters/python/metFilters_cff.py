@@ -68,8 +68,6 @@ metFilters = cms.Sequence(
 #   HBHENoiseIsoFilter*
    CSCTightHaloFilter *
 #   hcalLaserEventFilter *
-#  CSCTightHaloTrkMuUnvetoFilter *
-# CSCTightHalo2015Filter *
    EcalDeadCellTriggerPrimitiveFilter* 
 #   *goodVertices * trackingFailureFilter *
    eeBadScFilter
