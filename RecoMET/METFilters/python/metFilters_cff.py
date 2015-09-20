@@ -7,6 +7,12 @@ from CommonTools.RecoAlgos.HBHENoiseFilter_cfi import *
 ## The CSC beam halo tight filter ____________________________________________||
 from RecoMET.METFilters.CSCTightHaloFilter_cfi import *
 
+## The CSC beam halo tight filter ____________________________________________||
+from RecoMET.METFilters.CSCTightHaloTrkMuUnvetoFilter_cfi import *
+
+## The CSC beam halo tight filter ____________________________________________||
+from RecoMET.METFilters.CSCTightHalo2015Filter_cfi import *
+
 ## The hcal problematic strip halo filter ____________________________________________||
 from RecoMET.METFilters.HcalStripHaloFilter_cfi import *
 
@@ -28,7 +34,7 @@ from RecoMET.METFilters.ecalLaserCorrFilter_cfi import *
 ## The Good vertices collection needed by the tracking failure filter ________||
 goodVertices = cms.EDFilter(
   "VertexSelector",
-  filter = cms.bool(False),
+  filter = cms.bool(True),
   src = cms.InputTag("offlinePrimaryVertices"),
   cut = cms.string("!isFake && ndof > 4 && abs(z) <= 24 && position.rho < 2")
 )
@@ -37,10 +43,10 @@ goodVertices = cms.EDFilter(
 from RecoMET.METFilters.trackingFailureFilter_cfi import *
 
 ##noscraping (outdated)_______________________________________________________||
-# from RecoMET.METFilters.scrapingFilter_cfi import *
+from RecoMET.METFilters.scrapingFilter_cfi import *
 
 ## The primary vertex filter__ _______________________________________________||
-# from RecoMET.METFilters.primaryVertexFilter_cfi import *
+from RecoMET.METFilters.primaryVertexFilter_cfi import *
 
 ## The tracking POG filters __________________________________________________||
 from RecoMET.METFilters.trackingPOGFilters_cff import *
@@ -58,11 +64,15 @@ from RecoMET.METFilters.trackingPOGFilters_cff import *
 metFilters = cms.Sequence(
    HBHENoiseFilterResultProducer *
    HBHENoiseFilter *
+   primaryVertexFilter*
+#   HBHENoiseIsoFilter*
    CSCTightHaloFilter *
-   hcalLaserEventFilter *
-   EcalDeadCellTriggerPrimitiveFilter *
-   goodVertices * trackingFailureFilter *
-   eeBadScFilter *
-   ecalLaserCorrFilter *
-   trkPOGFilters
+#   hcalLaserEventFilter *
+#  CSCTightHaloTrkMuUnvetoFilter *
+# CSCTightHalo2015Filter *
+   EcalDeadCellTriggerPrimitiveFilter* 
+#   *goodVertices * trackingFailureFilter *
+   eeBadScFilter
+#   ecalLaserCorrFilter *
+#   trkPOGFilters
 )
