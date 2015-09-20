@@ -47,6 +47,8 @@ BeamHaloSummaryProducer::BeamHaloSummaryProducer(const edm::ParameterSet& iConfi
   T_HcalPhiWedgeToF = (float)iConfig.getParameter<double>("t_HcalPhiWedgeToF");
   T_HcalPhiWedgeConfidence = (float)iConfig.getParameter<double>("t_HcalPhiWedgeConfidence");
 
+  problematicStripMinLength = (int)iConfig.getParameter<int>("problematicStripMinLength");
+
   cschalodata_token_ = consumes<CSCHaloData>(IT_CSCHaloData);
   ecalhalodata_token_ = consumes<EcalHaloData>(IT_EcalHaloData);
   hcalhalodata_token_ = consumes<HcalHaloData>(IT_HcalHaloData);
@@ -84,6 +86,7 @@ void BeamHaloSummaryProducer::produce(Event& iEvent, const EventSetup& iSetup)
       (CSCData.NFlatHaloSegments() > 3 && (CSCData.NumberOfHaloTriggers() || CSCData.NumberOfHaloTracks()) ))
     TheBeamHaloSummary->GetCSCHaloReport()[1] = 1;
 
+
   //CSCLoose Id from 2010
   if( CSCData.NumberOfHaloTriggers() || CSCData.NumberOfHaloTracks() || CSCData.NumberOfOutOfTimeTriggers() )
     TheBeamHaloSummary->GetCSCHaloReport()[2] = 1;
@@ -93,6 +96,24 @@ void BeamHaloSummaryProducer::produce(Event& iEvent, const EventSetup& iSetup)
       (CSCData.NumberOfHaloTriggers() && CSCData.NumberOfOutOfTimeTriggers()) ||
       (CSCData.NumberOfHaloTracks() && CSCData.NumberOfOutOfTimeTriggers() ) )
     TheBeamHaloSummary->GetCSCHaloReport()[3] = 1;
+
+  //CSCTight Id for 2015
+
+  if( (CSCData.NumberOfHaloTriggers_TrkMuUnVeto() && CSCData.NumberOfHaloTracks()) ||
+      (CSCData.NOutOfTimeHits() > 10 && CSCData.NumberOfHaloTriggers_TrkMuUnVeto() ) ||
+      (CSCData.NOutOfTimeHits() > 10 && CSCData.NumberOfHaloTracks() ) ||
+      CSCData.GetSegmentsInBothEndcaps_Loose_TrkMuUnVeto() ||
+      (CSCData.NTracksSmalldT() && CSCData.NumberOfHaloTracks() ) ||
+      (CSCData.NFlatHaloSegments() > 3 && (CSCData.NumberOfHaloTriggers_TrkMuUnVeto() || CSCData.NumberOfHaloTracks()) ))
+    TheBeamHaloSummary->GetCSCHaloReport()[4] = 1; 
+
+
+  //Update
+  if(  (CSCData.NumberOfHaloTriggers_TrkMuUnVeto() && CSCData.NFlatHaloSegments_TrkMuUnVeto() ) ||
+       CSCData.GetSegmentsInBothEndcaps_Loose_dTcut_TrkMuUnVeto() ||
+       CSCData.GetSegmentIsCaloMatched()
+      )
+    TheBeamHaloSummary->GetCSCHaloReport()[5] = 1;
 
 
   //Ecal Specific Halo Data
@@ -209,6 +230,15 @@ void BeamHaloSummaryProducer::produce(Event& iEvent, const EventSetup& iSetup)
     TheBeamHaloSummary->GetHcalHaloReport()[0] = 1;
   if( HcalTightId ) 
     TheBeamHaloSummary->GetHcalHaloReport()[1] = 1;
+
+
+  for( unsigned int i = 0 ; i < HcalData.getProblematicStrips().size() ; i++ ) {
+    auto const& problematicStrip = HcalData.getProblematicStrips()[i];
+    if(problematicStrip.cellTowerIds.size() < (unsigned int)problematicStripMinLength) continue;
+
+    TheBeamHaloSummary->getProblematicStrips().push_back(problematicStrip);
+  }
+
 
   // Global Halo Data
   Handle<GlobalHaloData> TheGlobalHaloData;
