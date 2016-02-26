@@ -38,6 +38,10 @@ namespace cms
    produces<math::Error<2>::type>("METCovariance");
    
   }
+METSignificanceProducer::~METSignificanceProducer()
+{
+   delete metSigAlgo_;
+}
 
 //____________________________________________________________________________||
   void METSignificanceProducer::produce(edm::Event& event, const edm::EventSetup& setup)
