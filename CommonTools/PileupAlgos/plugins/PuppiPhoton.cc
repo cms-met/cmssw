@@ -110,6 +110,7 @@ void PuppiPhoton::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     const reco::PFCandidate *pPF = dynamic_cast<const reco::PFCandidate*>(&(*itPF));
     reco::PFCandidate pCand( pPF ? *pPF : reco::PFCandidate(itPF->charge(), itPF->p4(), id) );
     LorentzVector pVec = itPF->p4();
+    auto pfpt = itPF->pt();
     float pWeight = 1.;
     if(useValueMap_) pWeight  = (*pupWeights)[pupCol->ptrAt(iPF)];     
     if(!usePFRef_) { 
@@ -123,13 +124,13 @@ void PuppiPhoton::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
 	if(pupCol->refAt(iPF).key() != *itPho) continue;
 	pWeight = weight_;
 	if(!useValueMap_) { 
-	  double pCorr = phoCands[iPho]->pt()/itPF->pt();
-	  pWeight = pWeight*pCorr;
+	  if (pfpt != 0) pWeight = pWeight*(phoCands[iPho]->pt()/pfpt);
+	  else pVec.SetPxPyPzE(phoCands[iPho]->px()*pWeight,phoCands[iPho]->py()*pWeight,phoCands[iPho]->pz()*pWeight,phoCands[iPho]->energy()*pWeight);
 	}
 	foundPhoIndex.push_back(iPho);
       }
     }
-    pVec.SetPxPyPzE(itPF->px()*pWeight,itPF->py()*pWeight,itPF->pz()*pWeight,itPF->energy()*pWeight);
+    if (pfpt != 0) pVec.SetPxPyPzE(itPF->px()*pWeight,itPF->py()*pWeight,itPF->pz()*pWeight,itPF->energy()*pWeight);
     lWeights.push_back(pWeight);
     pCand.setP4(pVec);
     puppiP4s.push_back( pVec );
