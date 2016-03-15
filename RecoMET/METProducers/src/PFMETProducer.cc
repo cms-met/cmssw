@@ -92,6 +92,21 @@ namespace cms
 	edm::Handle<edm::View<reco::Jet> > inputJets;
 	event.getByToken( jetToken_, inputJets );
 
+   bool applySF = false;
+   // access JERs using text files
+   /*
+   edm::FileInPath fPtRes("RecoMET/METProducers/data/Summer15_25nsV6_MC_PtResolution_AK4PFchs.txt");
+   edm::FileInPath fPhiRes("RecoMET/METProducers/data/Summer15_25nsV6_MC_PhiResolution_AK4PFchs.txt");
+   edm::FileInPath fSF("RecoMET/METProducers/data/Summer15_25nsV6_MC_SF_AK4PFchs.txt");
+
+   JME::JetResolution resPtObj = JME::JetResolution(fPtRes.fullPath().c_str());
+   JME::JetResolution resPhiObj = JME::JetResolution(fPhiRes.fullPath().c_str());
+   JME::JetResolutionScaleFactor resSFObj = JME::JetResolutionScaleFactor(fSF.fullPath().c_str());
+
+   applySF = event.isRealData();
+   */
+
+   // access JERs using DB
 	JME::JetResolution resPtObj = JME::JetResolution::get(setup, jetResPtType_);
 	JME::JetResolution resPhiObj = JME::JetResolution::get(setup, jetResPhiType_);
 	JME::JetResolutionScaleFactor resSFObj = JME::JetResolutionScaleFactor::get(setup, jetSFType_);
@@ -100,7 +115,7 @@ namespace cms
 	event.getByToken(rhoToken_, rho);
 
 	//Compute the covariance matrix and fill it
-	reco::METCovMatrix cov = metSigAlgo_->getCovariance( *inputJets, leptons, candInput, *rho, resPtObj, resPhiObj, resSFObj, event.isRealData() );
+	reco::METCovMatrix cov = metSigAlgo_->getCovariance( *inputJets, leptons, candInput, *rho, resPtObj, resPhiObj, resSFObj, applySF );
 
 	return cov;
   }
