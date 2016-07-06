@@ -71,6 +71,9 @@ namespace reco
 
     //________________________________________________________________________||
     void setSignificanceMatrix(const reco::METCovMatrix& matrix);
+    void setSumEt(const double & sumEt){
+      sumet = sumEt;
+    };
     reco::METCovMatrix getSignificanceMatrix(void) const;
 
   private:
