@@ -1376,12 +1376,12 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
             if self._parameters["onMiniAOD"].value: 
                 pfCHS = cms.EDFilter("CandPtrSelector", src = pfCandCollection, cut = cms.string("fromPV"))
             else:
-                setattr( process, "tmpPFCandCollPtr", cms.EDProducer("PFCandidateFwdPtrProducer",
+                setattr( process, "tmpPFCandCollPtr"+postfix, cms.EDProducer("PFCandidateFwdPtrProducer",
                                                                      src = pfCandCollection ) )
                 process.load("CommonTools.ParticleFlow.pfNoPileUpJME_cff")
                 configtools.cloneProcessingSnippet(process, getattr(process,"pfNoPileUpJMESequence"), postfix )
-                getattr(process, "pfPileUpJME"+postfix).PFCandidates = cms.InputTag("tmpPFCandCollPtr")
-                pfCHS = getattr(process, "pfNoPileUpJME").clone( bottomCollection = cms.InputTag("tmpPFCandCollPtr") )
+                getattr(process, "pfPileUpJME"+postfix).PFCandidates = cms.InputTag("tmpPFCandCollPtr"+postfix)
+                pfCHS = getattr(process, "pfNoPileUpJME").clone( bottomCollection = cms.InputTag("tmpPFCandCollPtr"+postfix) )
             
             if not hasattr(process, "pfCHS"+postfix):
                 setattr(process,"pfCHS"+postfix,pfCHS)
@@ -1557,7 +1557,9 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
                     src = tauCollection
                     )
                 cleanPatTauProducer.checkOverlaps.electrons.src = electronCollection
+                #cleanPatTauProducer.checkOverlaps.electrons.requireNoOverlaps=cms.bool(True)
                 cleanPatTauProducer.checkOverlaps.muons.src = muonCollection
+                #cleanPatTauProducer.checkOverlaps.muons.requireNoOverlaps=cms.bool(True)
                 setattr(process, "cleanedPatTaus"+postfix, cleanPatTauProducer)
                 jetProductionSequence += getattr(process, "cleanedPatTaus"+postfix)
                 tauCollection = cms.InputTag("cleanedPatTaus"+postfix)
@@ -1568,6 +1570,7 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
                     src = photonCollection
                     )
                 cleanPatPhotonProducer.checkOverlaps.electrons.src = electronCollection
+                #cleanPatPhotonProducer.checkOverlaps.electrons.requireNoOverlaps=cms.bool(True)
                 setattr(process, "cleanedPatPhotons"+postfix, cleanPatPhotonProducer)
                 jetProductionSequence += getattr(process, "cleanedPatPhotons"+postfix)
                 photonCollection = cms.InputTag("cleanedPatPhotons"+postfix)
@@ -1583,13 +1586,17 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
             del process.cleanPatJets
         cleanPatJetProducer.checkOverlaps.muons.src = muonCollection
         cleanPatJetProducer.checkOverlaps.electrons.src = electronCollection
+        #cleanPatJetProducer.checkOverlaps.muons.requireNoOverlaps=cms.bool(True)
+        #cleanPatJetProducer.checkOverlaps.electrons.requireNoOverlaps=cms.bool(True)
         if isValidInputTag(photonCollection) and autoJetCleaning != "LepClean":
             cleanPatJetProducer.checkOverlaps.photons.src = photonCollection
+            #cleanPatJetProducer.checkOverlaps.photons.requireNoOverlaps=cms.bool(True)
         else:
             del cleanPatJetProducer.checkOverlaps.photons
             
         if isValidInputTag(tauCollection) and autoJetCleaning != "LepClean":
             cleanPatJetProducer.checkOverlaps.taus.src = tauCollection
+            #cleanPatJetProducer.checkOverlaps.taus.requireNoOverlaps=cms.bool(True)
         else:
             del cleanPatJetProducer.checkOverlaps.taus
            
