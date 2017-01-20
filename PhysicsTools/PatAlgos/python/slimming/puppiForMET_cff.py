@@ -3,16 +3,16 @@ import FWCore.ParameterSet.Config as cms
 from CommonTools.PileupAlgos.Puppi_cff import *
 from CommonTools.PileupAlgos.PhotonPuppi_cff        import setupPuppiPhoton,setupPuppiPhotonMiniAOD
 
-def makePuppies( process ):
+def makePuppies( process, pfCandidateCollection="particleFlow" ):
     
     process.load('CommonTools.PileupAlgos.Puppi_cff')
     
     process.pfNoLepPUPPI = cms.EDFilter("PdgIdCandViewSelector",
-                                        src = cms.InputTag("particleFlow"), 
+                                        src = cms.InputTag(pfCandidateCollection), 
                                         pdgId = cms.vint32( 1,2,22,111,130,310,2112,211,-211,321,-321,999211,2212,-2212 )
                                         )
     process.pfLeptonsPUPPET = cms.EDFilter("PdgIdCandViewSelector",
-                                           src = cms.InputTag("particleFlow"),
+                                           src = cms.InputTag(pfCandidateCollection),
                                            pdgId = cms.vint32(-11,11,-13,13),
                                            )
 

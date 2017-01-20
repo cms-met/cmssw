@@ -26,10 +26,10 @@ process.maxEvents = cms.untracked.PSet(
 )
 
 #configurable options =======================================================================
-runOnData=False #data/MC switch
+runOnData=True #data/MC switch
 usePrivateSQlite=False #use external JECs (sqlite file)
 useHFCandidates=True #create an additionnal NoHF slimmed MET collection if the option is set to false
-redoPuppi=True # rebuild puppiMET
+redoPuppi=False # rebuild puppiMET
 #===================================================================
 
 
@@ -75,13 +75,24 @@ if usePrivateSQlite:
 ### =====================================================================================================
 # Define the input source
 if runOnData:
-  fname = 'root://eoscms.cern.ch//store/relval/CMSSW_8_0_19/DoubleEG/MINIAOD/80X_dataRun2_relval_v16_RelVal_doubEG2015D-v1/00000/004197B7-4B6E-E611-AAC0-0CC47A4D763C.root'
+  fname="/store/user/zdemirag/metscan/DoubleMuon/crab_pickEventsRereco/161220_090009/0000/pickevents_rereco_8.root"
+  #fname = '/store/relval/CMSSW_8_0_20/MET/MINIAOD/80X_dataRun2_relval_Candidate_2016_09_02_10_27_40_RelVal_met2016B-v1/00000/2E6B9138-1C7A-E611-AE72-0025905A60DE.root' 
 else:
-  fname = 'root://eoscms.cern.ch//store/relval/CMSSW_8_0_19/RelValTTbar_13/MINIAODSIM/PU25ns_80X_mcRun2_asymptotic_v17_gs7120p2-v1/00000/18AFB53D-766E-E611-A80A-0CC47A78A408.root'
+  #fname = '/store/relval/CMSSW_8_0_20/RelValZMM_13/MINIAODSIM/80X_mcRun2_asymptotic_2016_TrancheIV_v4_Tr4GT_v4-v1/00000/64F9C946-C57A-E611-AA05-0CC47A74527A.root'
+  fname="file:/tmp/mmarionn/test.root"
 
 # Define the input source
 process.source = cms.Source("PoolSource", 
-    fileNames = cms.untracked.vstring([ fname ])
+    fileNames = cms.untracked.vstring( #[ fname ])
+    #"/store/user/zdemirag/metscan/DoubleMuon/crab_pickEventsRereco/161220_090009/0000/pickevents_rereco_1.root"
+    #"/store/user/zdemirag/metscan/DoubleMuon/crab_pickEventsRereco/161220_090009/0000/pickevents_rereco_2.root",
+    #"/store/user/zdemirag/metscan/DoubleMuon/crab_pickEventsRereco/161220_090009/0000/pickevents_rereco_3.root",
+    #"/store/user/zdemirag/metscan/DoubleMuon/crab_pickEventsRereco/161220_090009/0000/pickevents_rereco_4.root",
+    #"/store/user/zdemirag/metscan/DoubleMuon/crab_pickEventsRereco/161220_090009/0000/pickevents_rereco_5.root",
+    #"/store/user/zdemirag/metscan/DoubleMuon/crab_pickEventsRereco/161220_090009/0000/pickevents_rereco_6.root",
+    #"/store/user/zdemirag/metscan/DoubleMuon/crab_pickEventsRereco/161220_090009/0000/pickevents_rereco_7.root",
+    "/store/user/zdemirag/metscan/DoubleMuon/crab_pickEventsRereco/161220_090009/0000/pickevents_rereco_8.root"
+    )
 )
 
 
@@ -129,11 +140,27 @@ if redoPuppi:
                              )
 
 
+from PhysicsTools.PatUtils.tools.muonRecoMitigation import muonRecoMitigation
+muonRecoMitigation(process,
+                   pfCandCollection="packedPFCandidates",
+                   #muonCollection="badGlobalMuonTagger", #cloneGlobalMuonTagger
+                   runOnMiniAOD=True,
+                   cleaningScheme="computeAllApplyClone"
+                   )
+
+runMetCorAndUncFromMiniAOD(process,
+                          isData=runOnData,
+                           pfCandColl="cleanMuonsPFCandidates",
+                           recoMetFromPFCs=True,
+                           postfix="MuClean"
+                           )
+
 process.MINIAODSIMoutput = cms.OutputModule("PoolOutputModule",
     compressionLevel = cms.untracked.int32(4),
     compressionAlgorithm = cms.untracked.string('LZMA'),
     eventAutoFlushCompressedSize = cms.untracked.int32(15728640),
-    outputCommands = cms.untracked.vstring( "keep *_slimmedMETs_*_RERUN",
+    outputCommands = cms.untracked.vstring( "keep *_slimmedMETs_*_*",
+                                            "keep *_slimmedMETsMuClean_*_*",
                                             "keep *_slimmedMETsNoHF_*_*",
                                             "keep *_patPFMet_*_*",
                                             "keep *_patPFMetT1_*_*",
@@ -144,6 +171,20 @@ process.MINIAODSIMoutput = cms.OutputModule("PoolOutputModule",
                                             "keep *_patPFMetT1SmearJetResUp_*_*",
                                             "keep *_patPFMetT1Puppi_*_*",
                                             "keep *_slimmedMETsPuppi_*_*",
+                                            "keep *_corEGSlimmedMET_*_*",
+                                            "keep *_slimmedPhotons_*_*",
+                                            "keep *_slimmedElectrons_*_*",
+                                            "keep *_cleanedPhotons_*_*",
+                                            "keep *_cleanedCorPhotons_*_*",
+                                            "keep *_corMETPhoton_*_*",
+                                            "keep *_corMETElectron_*_*",
+                                            "keep *_badGlobalMuonTagger_*_*",
+                                            "keep *_cloneGlobalMuonTagger_*_*",
+                                            "keep *_cleanMuonsPFCandidates_*_*",
+                                            "keep *_superbadMuons_*_*",
+                                            "keep *_cleanMuonsPFCandidates_*_*",
+                                            "keep *_packedPFCandidates_*_*"
+                                            
                                             ),
     fileName = cms.untracked.string('corMETMiniAOD.root'),
     dataset = cms.untracked.PSet(

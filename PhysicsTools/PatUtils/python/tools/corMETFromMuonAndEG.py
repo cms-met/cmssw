@@ -11,9 +11,11 @@ def corMETFromMuonAndEG(process,
                         eGCorrection,
                         allMETEGCorrected,
                         runOnMiniAOD,
+                        eGPfCandMatching=False,
                         corMetName="slimmedMETsCorMuAndEG",
                         muSelection="",
                         muonCollection="",
+                        eGPFix="",
                         postfix=""
                         ):
 
@@ -27,6 +29,7 @@ def corMETFromMuonAndEG(process,
                            runOnMiniAOD=runOnMiniAOD,
                            muonCollection=muonCollection,
                            selection=muSelection,
+                           cleaningScheme="duplicated",
                            postfix=postfix)
         
         if runOnMiniAOD:
@@ -48,7 +51,7 @@ def corMETFromMuonAndEG(process,
 
         #no better idea for now, duplicating the full std METs
         #if we do not correct for the muons
-        pFix="MuClean"+postfix if muCorrection else "" #postfix
+        pFix="MuClean"+postfix if muCorrection else eGPFix #postfix
         metCollections=["patPFMetT1"+pFix]
         if allMETEGCorrected:
             metCollections.extend([
@@ -76,13 +79,15 @@ def corMETFromMuonAndEG(process,
                             "patPFMetT1UnclusteredEn"+var+pFix,
                             ])
             
+        eGPfCandCollection= pfCandCollection if not muCorrection else "cleanMuonsPFCandidates"+postfix
         eGammaCorrection(process, 
                          electronCollection=electronCollection,
                          photonCollection=photonCollection,
                          corElectronCollection=corElectronCollection,
                          corPhotonCollection=corPhotonCollection,
                          metCollections=metCollections,
-                         #correctAlreadyExistingMET=False,
+                         pfCandMatching=eGPfCandMatching,
+                         pfCandidateCollection=eGPfCandCollection,
                          corMetName=corMetName,
                          postfix=postfix
                          )

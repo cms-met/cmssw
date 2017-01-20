@@ -435,6 +435,9 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
             noClonesTmp = [ "particleFlowDisplacedVertex", "pfCandidateToVertexAssociation" ]
             configtools.cloneProcessingSnippet(process, getattr(process,"producePatPFMETCorrections"), postfix, noClones = noClonesTmp)
             setattr(process, 'pat'+metType+'Met'+postfix, getattr(process,'patPFMet' ).clone() )
+            if not self._parameters['recoMetFromPFCs'].value and not hasattr(process, "pfMet"+postfix):
+                tmpPfMetModule=getattr(process, "pfMet").clone()
+                setattr(process, "pfMet"+postfix, tmpPfMetModule )
             getattr(process, "patPFMet"+postfix).metSource = cms.InputTag("pfMet"+postfix)
             getattr(process, "patPFMet"+postfix).srcPFCands = self._parameters["pfCandCollection"].value
         
@@ -564,6 +567,10 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
 
         #MET significance bypass for the patMETs from AOD
         if not self._parameters["onMiniAOD"].value and not postfix=="NoHF":
+            if not self._parameters['recoMetFromPFCs'].value and not hasattr(process, "patMETs"+postfix):
+                tmpPatMETModule=getattr(process, "patMETs").clone()
+                setattr(process, "patMETs"+postfix, tmpPatMETModule )
+
             getattr(process, "patMETs"+postfix).computeMETSignificance = cms.bool(True)
             getattr(process, "patMETs"+postfix).srcPFCands=self._parameters["pfCandCollection"].value
 
@@ -1261,7 +1268,11 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
             patMetModuleSequence += getattr(process, "pfMet"+postfix)
             
             #PAT METs
-            process.load("PhysicsTools.PatAlgos.producersLayer1.metProducer_cff")
+            if not hasattr(process, "patMETCorrections"):
+                process.load("PhysicsTools.PatAlgos.producersLayer1.metProducer_cff")
+            #from PhysicsTools.PatAlgos.producersLayer1.metProducer_cff import *
+            #if not hasattr(process, "patMETCorrections"):
+            #    setattr(process,"patMETCorrections", patMETCorrections)
             configtools.cloneProcessingSnippet(process, getattr(process,"patMETCorrections"), postfix)
                   
             #T1 pfMet for AOD to mAOD only
@@ -1269,7 +1280,7 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
                 #correction duplication needed
                 getattr(process, "pfMetT1"+postfix).src = cms.InputTag("pfMet"+postfix)
                 patMetModuleSequence += getattr(process, "pfMetT1"+postfix)
-
+                
                 setattr(process, 'patMETs'+postfix, getattr(process,'patMETs' ).clone() )
                 getattr(process, "patMETs"+postfix).metSource = cms.InputTag("pfMetT1"+postfix)
                 getattr(process, "patMETs"+postfix).computeMETSignificance = cms.bool(True)
@@ -1282,7 +1293,8 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
                     getattr(process, 'patMETs'+postfix).srcJetSF = cms.string('AK4PFPuppi')
                     getattr(process, 'patMETs'+postfix).srcJetResPt = cms.string('AK4PFPuppi_pt')
                     getattr(process, 'patMETs'+postfix).srcJetResPhi = cms.string('AK4PFPuppi_phi')
-
+                
+                
 
     def extractMET(self, process, correctionLevel, patMetModuleSequence, postfix):
         pfMet = cms.EDProducer("RecoMETExtractor",

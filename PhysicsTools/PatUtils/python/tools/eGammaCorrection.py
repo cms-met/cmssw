@@ -10,6 +10,8 @@ def eGammaCorrection(process,
                      corElectronCollection,
                      corPhotonCollection,
                      metCollections,
+                     pfCandMatching=False,
+                     pfCandidateCollection="",
                      #correctAlreadyExistingMET,
                      corMetName="corEGSlimmedMET",
                      postfix=""
@@ -41,26 +43,32 @@ def eGammaCorrection(process,
 
     #matching between objects
     matchPhotonCollection="matchedPhotons"+postfix
-    matchPhotonProducer=cms.EDProducer("CandidateRefMatcher",
+    matchPhotonProducer=cms.EDProducer("PFMatchedCandidateRefExtractor",
                                        col1=cms.InputTag(cleanedPhotonCollection),
-                                       col2=cms.InputTag(cleanedCorPhotonCollection) )
+                                       col2=cms.InputTag(cleanedCorPhotonCollection),
+                                       pfCandCollection=cms.InputTag(pfCandidateCollection),
+                                       extractPFCandidates=cms.bool(pfCandMatching) )
     
     matchElectronCollection="matchedElectrons"+postfix
-    matchElectronProducer=cms.EDProducer("CandidateRefMatcher",
+    matchElectronProducer=cms.EDProducer("PFMatchedCandidateRefExtractor",
                                          col1=cms.InputTag(electronCollection),
-                                         col2=cms.InputTag(corElectronCollection) )
+                                         col2=cms.InputTag(corElectronCollection),
+                                         pfCandCollection=cms.InputTag(pfCandidateCollection),
+                                         extractPFCandidates=cms.bool(pfCandMatching) )
     
 
     #removal of old objects, and replace by the new 
+    tag1= "pfCandCol1" if pfCandMatching else "col1"
+    tag2= "pfCandCol2" if pfCandMatching else "col2"
     correctionPhoton="corMETPhoton"+postfix
     corMETPhoton = cms.EDProducer("ShiftedParticleMETcorrInputProducer",
-                                  srcOriginal = cms.InputTag(matchPhotonCollection,"col1"),
-                                  srcShifted = cms.InputTag(matchPhotonCollection,"col2"),
+                                  srcOriginal = cms.InputTag(matchPhotonCollection,tag1),
+                                  srcShifted = cms.InputTag(matchPhotonCollection,tag2),
                                   )
     correctionElectron="corMETElectron"+postfix
     corMETElectron=cms.EDProducer("ShiftedParticleMETcorrInputProducer",
-                                  srcOriginal=cms.InputTag(matchElectronCollection,"col1"),
-                                  srcShifted=cms.InputTag(matchElectronCollection,"col2"),
+                                  srcOriginal=cms.InputTag(matchElectronCollection,tag1),
+                                  srcShifted=cms.InputTag(matchElectronCollection,tag2),
                                   )
 
 
