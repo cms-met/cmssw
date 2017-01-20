@@ -101,31 +101,46 @@ def miniAOD_customizeCommon(process):
                      )
 
     #noHF pfMET =========
-    process.noHFCands = cms.EDFilter("GenericPFCandidateSelector",
-                                     src=cms.InputTag("particleFlow"),
-                                     cut=cms.string("abs(pdgId)!=1 && abs(pdgId)!=2 && abs(eta)<3.0")
-                                     )
-    runMetCorAndUncForMiniAODProduction(process,
-                                        pfCandColl=cms.InputTag("noHFCands"),
-                                        recoMetFromPFCs=True, #needed for HF removal
-                                        jetSelection="pt>15 && abs(eta)<3.",
-                                        postfix="NoHF"
-                                        )
+    #process.noHFCands = cms.EDFilter("GenericPFCandidateSelector",
+    #                                 src=cms.InputTag("particleFlow"),
+    #                                 cut=cms.string("abs(pdgId)!=1 && abs(pdgId)!=2 && abs(eta)<3.0")
+    #                                 )
+    #runMetCorAndUncForMiniAODProduction(process,
+    #                                    pfCandColl=cms.InputTag("noHFCands"),
+    #                                    recoMetFromPFCs=True, #needed for HF removal
+    #                                    jetSelection="pt>15 && abs(eta)<3.",
+    #                                    postfix="NoHF"
+    #                                    )
 
-    process.load('PhysicsTools.PatAlgos.slimming.slimmedMETs_cfi')
-    process.slimmedMETsNoHF = process.slimmedMETs.clone()
-    process.slimmedMETsNoHF.src = cms.InputTag("patMETsNoHF")
-    process.slimmedMETsNoHF.rawVariation =  cms.InputTag("patPFMetNoHF")
-    process.slimmedMETsNoHF.t1Uncertainties = cms.InputTag("patPFMetT1%sNoHF") 
-    process.slimmedMETsNoHF.t01Variation = cms.InputTag("patPFMetT0pcT1NoHF")
-    process.slimmedMETsNoHF.t1SmearedVarsAndUncs = cms.InputTag("patPFMetT1Smear%sNoHF")
-    process.slimmedMETsNoHF.tXYUncForRaw = cms.InputTag("patPFMetTxyNoHF")
-    process.slimmedMETsNoHF.tXYUncForT1 = cms.InputTag("patPFMetT1TxyNoHF")
-    process.slimmedMETsNoHF.tXYUncForT01 = cms.InputTag("patPFMetT0pcT1TxyNoHF")
-    process.slimmedMETsNoHF.tXYUncForT1Smear = cms.InputTag("patPFMetT1SmearTxyNoHF")
-    process.slimmedMETsNoHF.tXYUncForT01Smear = cms.InputTag("patPFMetT0pcT1SmearTxyNoHF")
-    del process.slimmedMETsNoHF.caloMET
+    #process.load('PhysicsTools.PatAlgos.slimming.slimmedMETs_cfi')
+    #process.slimmedMETsNoHF = process.slimmedMETs.clone()
+    #process.slimmedMETsNoHF.src = cms.InputTag("patMETsNoHF")
+    #process.slimmedMETsNoHF.rawVariation =  cms.InputTag("patPFMetNoHF")
+    #process.slimmedMETsNoHF.t1Uncertainties = cms.InputTag("patPFMetT1%sNoHF") 
+    #process.slimmedMETsNoHF.t01Variation = cms.InputTag("patPFMetT0pcT1NoHF")
+    #process.slimmedMETsNoHF.t1SmearedVarsAndUncs = cms.InputTag("patPFMetT1Smear%sNoHF")
+    #process.slimmedMETsNoHF.tXYUncForRaw = cms.InputTag("patPFMetTxyNoHF")
+    #process.slimmedMETsNoHF.tXYUncForT1 = cms.InputTag("patPFMetT1TxyNoHF")
+    #process.slimmedMETsNoHF.tXYUncForT01 = cms.InputTag("patPFMetT0pcT1TxyNoHF")
+    #process.slimmedMETsNoHF.tXYUncForT1Smear = cms.InputTag("patPFMetT1SmearTxyNoHF")
+    #process.slimmedMETsNoHF.tXYUncForT01Smear = cms.InputTag("patPFMetT0pcT1SmearTxyNoHF")
+    #del process.slimmedMETsNoHF.caloMET
     # ================== NoHF pfMET
+
+
+    # Muon/EGamma corrected pfMET ============
+    from PhysicsTools.PatUtils.tools.corMETFromMuonAndEG import corMETFromMuonAndEG
+    corMETFromMuonAndEG(process,
+                        pfCandCollection="packedPFCandidates",
+                        electronCollection="slimmedElectrons",
+                        photonCollection="slimmedPhotons",
+                        corElectronCollection="slimmedElectrons",
+                        corPhotonCollection="slimmedPhotons",
+                        allMETEGCorrected=True,
+                        runOnMiniAOD=False
+                        )
+
+    #=========================================
 
     #keep this after all addJetCollections otherwise it will attempt computing them also for stuf with no taginfos
     #Some useful BTAG vars
