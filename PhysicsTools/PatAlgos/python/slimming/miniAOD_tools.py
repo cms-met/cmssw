@@ -90,8 +90,8 @@ def miniAOD_customizeCommon(process):
     # and estimate systematic uncertainties on MET
 
     from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncForMiniAODProduction
-    runMetCorAndUncForMiniAODProduction(process, metType="PF",
-                                        jetCollUnskimmed="patJets")
+    #runMetCorAndUncForMiniAODProduction(process, metType="PF",
+    #                                    jetCollUnskimmed="patJets")
     
     #caloMET computation
     from PhysicsTools.PatAlgos.tools.metTools import addMETCollection
@@ -101,44 +101,132 @@ def miniAOD_customizeCommon(process):
                      )
 
     #noHF pfMET =========
-    #process.noHFCands = cms.EDFilter("GenericPFCandidateSelector",
-    #                                 src=cms.InputTag("particleFlow"),
-    #                                 cut=cms.string("abs(pdgId)!=1 && abs(pdgId)!=2 && abs(eta)<3.0")
-    #                                 )
-    #runMetCorAndUncForMiniAODProduction(process,
-    #                                    pfCandColl=cms.InputTag("noHFCands"),
-    #                                    recoMetFromPFCs=True, #needed for HF removal
-    #                                    jetSelection="pt>15 && abs(eta)<3.",
-    #                                    postfix="NoHF"
-    #                                    )
+    process.noHFCands = cms.EDFilter("GenericPFCandidateSelector",
+                                     src=cms.InputTag("particleFlow"),
+                                     cut=cms.string("abs(pdgId)!=1 && abs(pdgId)!=2 && abs(eta)<3.0")
+                                     )
+    runMetCorAndUncForMiniAODProduction(process,
+                                        pfCandColl=cms.InputTag("noHFCands"),
+                                        recoMetFromPFCs=True, #needed for HF removal
+                                        jetSelection="pt>15 && abs(eta)<3.",
+                                        postfix="NoHF"
+                                        )
 
-    #process.load('PhysicsTools.PatAlgos.slimming.slimmedMETs_cfi')
-    #process.slimmedMETsNoHF = process.slimmedMETs.clone()
-    #process.slimmedMETsNoHF.src = cms.InputTag("patMETsNoHF")
-    #process.slimmedMETsNoHF.rawVariation =  cms.InputTag("patPFMetNoHF")
-    #process.slimmedMETsNoHF.t1Uncertainties = cms.InputTag("patPFMetT1%sNoHF") 
-    #process.slimmedMETsNoHF.t01Variation = cms.InputTag("patPFMetT0pcT1NoHF")
-    #process.slimmedMETsNoHF.t1SmearedVarsAndUncs = cms.InputTag("patPFMetT1Smear%sNoHF")
-    #process.slimmedMETsNoHF.tXYUncForRaw = cms.InputTag("patPFMetTxyNoHF")
-    #process.slimmedMETsNoHF.tXYUncForT1 = cms.InputTag("patPFMetT1TxyNoHF")
-    #process.slimmedMETsNoHF.tXYUncForT01 = cms.InputTag("patPFMetT0pcT1TxyNoHF")
-    #process.slimmedMETsNoHF.tXYUncForT1Smear = cms.InputTag("patPFMetT1SmearTxyNoHF")
-    #process.slimmedMETsNoHF.tXYUncForT01Smear = cms.InputTag("patPFMetT0pcT1SmearTxyNoHF")
-    #del process.slimmedMETsNoHF.caloMET
+    process.load('PhysicsTools.PatAlgos.slimming.slimmedMETs_cfi')
+    process.slimmedMETsNoHF = process.slimmedMETs.clone()
+    process.slimmedMETsNoHF.src = cms.InputTag("patMETsNoHF")
+    process.slimmedMETsNoHF.rawVariation =  cms.InputTag("patPFMetNoHF")
+    process.slimmedMETsNoHF.t1Uncertainties = cms.InputTag("patPFMetT1%sNoHF") 
+    process.slimmedMETsNoHF.t01Variation = cms.InputTag("patPFMetT0pcT1NoHF")
+    process.slimmedMETsNoHF.t1SmearedVarsAndUncs = cms.InputTag("patPFMetT1Smear%sNoHF")
+    process.slimmedMETsNoHF.tXYUncForRaw = cms.InputTag("patPFMetTxyNoHF")
+    process.slimmedMETsNoHF.tXYUncForT1 = cms.InputTag("patPFMetT1TxyNoHF")
+    process.slimmedMETsNoHF.tXYUncForT01 = cms.InputTag("patPFMetT0pcT1TxyNoHF")
+    process.slimmedMETsNoHF.tXYUncForT1Smear = cms.InputTag("patPFMetT1SmearTxyNoHF")
+    process.slimmedMETsNoHF.tXYUncForT01Smear = cms.InputTag("patPFMetT0pcT1SmearTxyNoHF")
+    del process.slimmedMETsNoHF.caloMET
     # ================== NoHF pfMET
 
 
-    # Muon/EGamma corrected pfMET ============
+    #pfCandidate correction for JetMET objects ==============================
+    from PhysicsTools.PatUtils.tools.muonRecoMitigation import muonRecoMitigation
+    muonRecoMitigation(process,
+                       pfCandCollection="particleFlow",
+                       runOnMiniAOD=False,
+                       cleaningScheme="computeAllApplyClone")
+   
+
+    # Muon/EGamma un/corrected pfMET ============
     from PhysicsTools.PatUtils.tools.corMETFromMuonAndEG import corMETFromMuonAndEG
+    # Mu corrected MET
+    #corMETFromMuonAndEG(process,
+    #                    pfCandCollection="cleanMuonsPFCandidates",
+    #                    electronCollection="slimmedElectrons",
+    #                    photonCollection="slimmedPhotons",
+    #                    corElectronCollection="slimmedElectrons",
+    #                    corPhotonCollection="slimmedPhotons",
+    #                    allMETEGCorrected=True,
+    #                    muCorrection=True,
+    #                    eGCorrection=False,
+    #                    runOnMiniAOD=False
+    #                    )
+    runMetCorAndUncForMiniAODProduction(process,
+                                   pfCandColl=cms.InputTag("cleanMuonsPFCandidates"),
+                                   recoMetFromPFCs=True,
+                                        )
+
+    # uncorrected MET
+    runMetCorAndUncForMiniAODProduction(process,
+                                        metType="PF",
+                                        jetCollUnskimmed="patJets",
+                                        postfix="Uncorrected"
+                                        )
+    process.load('PhysicsTools.PatAlgos.slimming.slimmedMETs_cfi')
+    process.slimmedMETsUncorrected = process.slimmedMETs.clone()
+    process.slimmedMETsUncorrected.src = cms.InputTag("patPFMetT1Uncorrected")
+    process.slimmedMETsUncorrected.rawVariation =  cms.InputTag("patPFMetUncorrected")
+    process.slimmedMETsUncorrected.t1Uncertainties = cms.InputTag("patPFMetT1%sUncorrected") 
+    process.slimmedMETsUncorrected.t01Variation = cms.InputTag("patPFMetT0pcT1Uncorrected")
+    process.slimmedMETsUncorrected.t1SmearedVarsAndUncs = cms.InputTag("patPFMetT1Smear%sUncorrected")
+    process.slimmedMETsUncorrected.tXYUncForRaw = cms.InputTag("patPFMetTxyUncorrected")
+    process.slimmedMETsUncorrected.tXYUncForT1 = cms.InputTag("patPFMetT1TxyUncorrected")
+    process.slimmedMETsUncorrected.tXYUncForT01 = cms.InputTag("patPFMetT0pcT1TxyUncorrected")
+    process.slimmedMETsUncorrected.tXYUncForT1Smear = cms.InputTag("patPFMetT1SmearTxyUncorrected")
+    process.slimmedMETsUncorrected.tXYUncForT01Smear = cms.InputTag("patPFMetT0pcT1SmearTxyUncorrected")
+    del process.slimmedMETsUncorrected.caloMET
+ 
+    # EG corrected MET
     corMETFromMuonAndEG(process,
-                        pfCandCollection="packedPFCandidates",
+                        pfCandCollection="", #not needed
                         electronCollection="slimmedElectrons",
                         photonCollection="slimmedPhotons",
                         corElectronCollection="slimmedElectrons",
                         corPhotonCollection="slimmedPhotons",
                         allMETEGCorrected=True,
-                        runOnMiniAOD=False
+                        muCorrection=False,
+                        eGCorrection=True,
+                        runOnMiniAOD=False,
+                        postfix="EGOnly"
                         )
+    process.slimmedMETsEGClean = process.slimmedMETs.clone()
+    process.slimmedMETsEGClean.src = cms.InputTag("patPFMetT1EGOnly")
+    process.slimmedMETsEGClean.rawVariation =  cms.InputTag("patPFMetRawEGOnly")
+    process.slimmedMETsEGClean.t1Uncertainties = cms.InputTag("patPFMetT1%sEGOnly") 
+    process.slimmedMETsEGClean.t01Variation = cms.InputTag("patPFMetT0pcT1EGOnly")
+    process.slimmedMETsEGClean.t1SmearedVarsAndUncs = cms.InputTag("patPFMetT1Smear%sEGOnly")
+    process.slimmedMETsEGClean.tXYUncForRaw = cms.InputTag("patPFMetTxyEGOnly")
+    process.slimmedMETsEGClean.tXYUncForT1 = cms.InputTag("patPFMetT1TxyEGOnly")
+    process.slimmedMETsEGClean.tXYUncForT01 = cms.InputTag("patPFMetT0pcT1TxyEGOnly")
+    process.slimmedMETsEGClean.tXYUncForT1Smear = cms.InputTag("patPFMetT1SmearTxyEGOnly")
+    process.slimmedMETsEGClean.tXYUncForT01Smear = cms.InputTag("patPFMetT0pcT1SmearTxyEGOnly")
+    del process.slimmedMETsEGClean.caloMET
+ 
+    # fully corrected MET
+    corMETFromMuonAndEG(process,
+                        pfCandCollection="", #not needed
+                        electronCollection="slimmedElectrons",
+                        photonCollection="slimmedPhotons",
+                        corElectronCollection="slimmedElectrons",
+                        corPhotonCollection="slimmedPhotons",
+                        allMETEGCorrected=True,
+                        muCorrection=False,
+                        eGCorrection=True,
+                        runOnMiniAOD=False,
+                        postfix="MuEGClean"
+                        )
+    process.slimmedMETsMuEGClean = process.slimmedMETs.clone()
+    process.slimmedMETsMuEGClean.src = cms.InputTag("patPFMetT1MuEGClean")
+    process.slimmedMETsMuEGClean.rawVariation =  cms.InputTag("patPFMetRawMuEGClean")
+    process.slimmedMETsMuEGClean.t1Uncertainties = cms.InputTag("patPFMetT1%sMuEGClean") 
+    process.slimmedMETsMuEGClean.t01Variation = cms.InputTag("patPFMetT0pcT1MuEGClean")
+    process.slimmedMETsMuEGClean.t1SmearedVarsAndUncs = cms.InputTag("patPFMetT1Smear%sMuEGClean")
+    process.slimmedMETsMuEGClean.tXYUncForRaw = cms.InputTag("patPFMetTxyMuEGClean")
+    process.slimmedMETsMuEGClean.tXYUncForT1 = cms.InputTag("patPFMetT1TxyMuEGClean")
+    process.slimmedMETsMuEGClean.tXYUncForT01 = cms.InputTag("patPFMetT0pcT1TxyMuEGClean")
+    process.slimmedMETsMuEGClean.tXYUncForT1Smear = cms.InputTag("patPFMetT1SmearTxyMuEGClean")
+    process.slimmedMETsMuEGClean.tXYUncForT01Smear = cms.InputTag("patPFMetT0pcT1SmearTxyMuEGClean")
+    del process.slimmedMETsMuEGClean.caloMET
+
 
     #=========================================
 
@@ -148,19 +236,20 @@ def miniAOD_customizeCommon(process):
         process.load('RecoBTag.ImpactParameter.pfImpactParameterTagInfos_cfi')
     if not hasattr( process, 'pfSecondaryVertexTagInfos' ):
         process.load('RecoBTag.SecondaryVertex.pfSecondaryVertexTagInfos_cfi')
-    process.patJets.userData.userFunctions = cms.vstring(
-    '?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).p4.M):(0)',
-    '?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).numberOfSourceCandidatePtrs):(0)',
-    '?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").flightDistance(0).value):(0)',
-    '?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").flightDistance(0).significance):(0)',
-    '?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).p4.x):(0)',
-    '?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).p4.y):(0)',
-    '?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).p4.z):(0)',
-    '?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).vertex.x):(0)',
-    '?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).vertex.y):(0)',
-    '?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).vertex.z):(0)',
-    )
-    process.patJets.userData.userFunctionLabels = cms.vstring('vtxMass','vtxNtracks','vtx3DVal','vtx3DSig','vtxPx','vtxPy','vtxPz','vtxPosX','vtxPosY','vtxPosZ')
+    # FIXME MM
+    #process.patJets.userData.userFunctions = cms.vstring(
+    #'?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).p4.M):(0)',
+    #'?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).numberOfSourceCandidatePtrs):(0)',
+    #'?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").flightDistance(0).value):(0)',
+    #'?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").flightDistance(0).significance):(0)',
+    #'?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).p4.x):(0)',
+    #'?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).p4.y):(0)',
+    #'?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).p4.z):(0)',
+    #'?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).vertex.x):(0)',
+    #'?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).vertex.y):(0)',
+    #'?(tagInfoCandSecondaryVertex("pfSecondaryVertex").nVertices()>0)?(tagInfoCandSecondaryVertex("pfSecondaryVertex").secondaryVertex(0).vertex.z):(0)',
+    #)
+    #process.patJets.userData.userFunctionLabels = cms.vstring('vtxMass','vtxNtracks','vtx3DVal','vtx3DSig','vtxPx','vtxPy','vtxPz','vtxPosX','vtxPosY','vtxPosZ')
     process.patJets.tagInfoSources = cms.VInputTag(cms.InputTag("pfSecondaryVertexTagInfos"))
     process.patJets.addTagInfos = cms.bool(True)
 
@@ -255,6 +344,7 @@ def miniAOD_customizeCommon(process):
     process.load('RecoJets.JetProducers.ak4PFJetsPuppi_cfi')
 
     process.ak4PFJetsPuppi.doAreaFastjet = True # even for standard ak4PFJets this is overwritten in RecoJets/Configuration/python/RecoPFJets_cff
+    process.ak4PFJetsPuppi.src=cms.InputTag("cleanMuonsPFCandidates")
 
     from RecoJets.JetAssociationProducers.j2tParametersVX_cfi import j2tParametersVX
     process.ak4PFJetsPuppiTracksAssociatorAtVertex = cms.EDProducer("JetTracksAssociatorAtVertex",
@@ -286,7 +376,7 @@ def miniAOD_customizeCommon(process):
     
     ## puppi met
     from PhysicsTools.PatAlgos.slimming.puppiForMET_cff import makePuppies
-    makePuppies( process );
+    makePuppies( process, "cleanMuonsPFCandidates" );
 
     runMetCorAndUncForMiniAODProduction(process, metType="Puppi",
                                         pfCandColl=cms.InputTag("puppiForMET"),
@@ -296,18 +386,33 @@ def miniAOD_customizeCommon(process):
                                         postfix="Puppi"
                                         )
     
+    #EG correction for puppi, muon correction done right above
+    corMETFromMuonAndEG(process,
+                        pfCandCollection="puppiForMET",
+                        electronCollection="slimmedElectrons",
+                        photonCollection="slimmedPhotons",
+                        corElectronCollection="slimmedElectrons",
+                        corPhotonCollection="slimmedPhotons",
+                        allMETEGCorrected=True,
+                        muCorrection=False,
+                        eGCorrection=True,
+                        runOnMiniAOD=False,
+                        eGPFix="Puppi",
+                        postfix="PuppiClean"
+                        )
+
     process.load('PhysicsTools.PatAlgos.slimming.slimmedMETs_cfi')
     process.slimmedMETsPuppi = process.slimmedMETs.clone()
-    process.slimmedMETsPuppi.src = cms.InputTag("patMETsPuppi")
-    process.slimmedMETsPuppi.rawVariation =  cms.InputTag("patPFMetPuppi")
-    process.slimmedMETsPuppi.t1Uncertainties = cms.InputTag("patPFMetT1%sPuppi")
-    process.slimmedMETsPuppi.t01Variation = cms.InputTag("patPFMetT0pcT1Puppi")
-    process.slimmedMETsPuppi.t1SmearedVarsAndUncs = cms.InputTag("patPFMetT1Smear%sPuppi")
-    process.slimmedMETsPuppi.tXYUncForRaw = cms.InputTag("patPFMetTxyPuppi")
-    process.slimmedMETsPuppi.tXYUncForT1 = cms.InputTag("patPFMetT1TxyPuppi")
-    process.slimmedMETsPuppi.tXYUncForT01 = cms.InputTag("patPFMetT0pcT1TxyPuppi")
-    process.slimmedMETsPuppi.tXYUncForT1Smear = cms.InputTag("patPFMetT1SmearTxyPuppi")
-    process.slimmedMETsPuppi.tXYUncForT01Smear = cms.InputTag("patPFMetT0pcT1SmearTxyPuppi")
+    process.slimmedMETsPuppi.src = cms.InputTag("patPFMetT1MuEGClean")
+    process.slimmedMETsPuppi.rawVariation =  cms.InputTag("patPFMetRawPuppiPuppiClean")
+    process.slimmedMETsPuppi.t1Uncertainties = cms.InputTag("patPFMetT1%sPuppiPuppiClean")
+    process.slimmedMETsPuppi.t01Variation = cms.InputTag("patPFMetT0pcT1PuppiPuppiClean")
+    process.slimmedMETsPuppi.t1SmearedVarsAndUncs = cms.InputTag("patPFMetT1Smear%sPuppiPuppiClean")
+    process.slimmedMETsPuppi.tXYUncForRaw = cms.InputTag("patPFMetTxyPuppiPuppiClean")
+    process.slimmedMETsPuppi.tXYUncForT1 = cms.InputTag("patPFMetT1TxyPuppiPuppiClean")
+    process.slimmedMETsPuppi.tXYUncForT01 = cms.InputTag("patPFMetT0pcT1TxyPuppiPuppiClean")
+    process.slimmedMETsPuppi.tXYUncForT1Smear = cms.InputTag("patPFMetT1SmearTxyPuppiPuppiClean")
+    process.slimmedMETsPuppi.tXYUncForT01Smear = cms.InputTag("patPFMetT0pcT1SmearTxyPuppiPuppiClean")
     del process.slimmedMETsPuppi.caloMET
 
 
