@@ -60,15 +60,21 @@ void PuppiPhoton::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   if(usePhotonId_) iEvent.getByToken(tokenPhotonId_,photonId);
   int iC = -1;
   std::vector<const reco::Candidate*> phoCands;
-  std::vector<uint16_t> phoIndx;
+  std::vector<unsigned> phoIndx;
 
   edm::Handle<edm::ValueMap<std::vector<reco::PFCandidateRef>>> reco2pf;
   if(!runOnMiniAOD_) iEvent.getByToken(reco2pf_, reco2pf);
 
-  // Get PFCandidate Collection
+  // Get Candidate View that was used to produce pupCol (PFProduct itself can be e.g. a PtrVector)
   edm::Handle<CandidateView> hPFProduct;
   iEvent.getByToken(tokenPFCandidates_,hPFProduct);
-  const CandidateView *pfCol = hPFProduct.product();
+
+  // Make a mapping of (index in original PF collection) -> (index in puppi collection).
+  // This is a trivial map, unless the collection used to make puppi has gone through
+  // some kind of filtering (as in the case with the muon cleaning for 03Feb2017 reMINIAOD).
+  std::map<unsigned, unsigned> originalKeyToPuppiKey;
+  for (unsigned iPF(0); iPF != hPFProduct->size(); ++iPF)
+    originalKeyToPuppiKey[hPFProduct->ptrAt(iPF).key()] = iPF;
 
   edm::Handle<CandidateView> hPuppiProduct;
   iEvent.getByToken(tokenPuppiCandidates_,hPuppiProduct);
@@ -83,9 +89,10 @@ void PuppiPhoton::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
       const pat::Photon *pPho = dynamic_cast<const pat::Photon*>(&(*itPho));
       if(pPho != 0) {
         for( const edm::Ref<pat::PackedCandidateCollection> & ref : pPho->associatedPackedPFCandidates() ) {
-	  if(fabs(pfCol->ptrAt(ref.key())->eta()) < eta_ ) {
-	    phoIndx.push_back(ref.key());
-	    phoCands.push_back(&(*(pfCol->ptrAt(ref.key()))));
+	  if(fabs(ref->eta()) < eta_ ) {
+            unsigned puppiKey(originalKeyToPuppiKey[ref.key()]);
+	    phoIndx.push_back(puppiKey);
+	    phoCands.push_back(ref.get());
 	  }
         }
         continue;
@@ -93,16 +100,18 @@ void PuppiPhoton::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
       const pat::Electron *pElectron = dynamic_cast<const pat::Electron*>(&(*itPho));
       if(pElectron != 0) {
         for( const edm::Ref<pat::PackedCandidateCollection> & ref : pElectron->associatedPackedPFCandidates() )
-	  if(fabs(pfCol->ptrAt(ref.key())->eta()) < eta_ )  {
-	    phoIndx.push_back(ref.key());
-	    phoCands.push_back(&(*(pfCol->ptrAt(ref.key()))));
+	  if(fabs(ref->eta()) < eta_ )  {
+            unsigned puppiKey(originalKeyToPuppiKey[ref.key()]);
+	    phoIndx.push_back(puppiKey);
+	    phoCands.push_back(ref.get());
 	  }
       }
     } else {
       for( const edm::Ref<std::vector<reco::PFCandidate> > & ref : (*reco2pf)[phoCol->ptrAt(iC)] ) {
-	  if(fabs(pfCol->ptrAt(ref.key())->eta()) < eta_ )  {
-	    phoIndx.push_back(ref.key());
-	    phoCands.push_back(&(*(pfCol->ptrAt(ref.key()))));
+	  if(fabs(ref->eta()) < eta_ )  {
+            unsigned puppiKey(originalKeyToPuppiKey[ref.key()]);
+	    phoIndx.push_back(puppiKey);
+	    phoCands.push_back(ref.get());
 	  }
       }
     }
@@ -113,7 +122,7 @@ void PuppiPhoton::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   std::auto_ptr<edm::ValueMap<LorentzVector> > p4PupOut(new edm::ValueMap<LorentzVector>());
   LorentzVectorCollection puppiP4s;
   std::vector<reco::CandidatePtr> values(hPFProduct->size());
-  int iPF = 0; 
+  unsigned iPF = 0; 
   std::vector<float> lWeights;
   static const reco::PFCandidate dummySinceTranslateIsNotStatic;
   corrCandidates_.reset( new PFOutputCollection );
@@ -127,19 +136,19 @@ void PuppiPhoton::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     if(useValueMap_) pWeight  = (*pupWeights)[pupCol->ptrAt(iPF)];     
     if(!usePFRef_) { 
       int iPho = -1;
-      for(std::vector<const reco::Candidate*>::iterator itPho = phoCands.begin(); itPho!=phoCands.end(); itPho++) {
+      for(auto* pho : phoCands) {
 	iPho++;
-	if((!matchPFCandidate(&(*itPF),*itPho))||(foundPhoIndex.count(iPho)!=0)) continue;
+	if((!matchPFCandidate(&(*itPF),pho))||(foundPhoIndex.count(iPho)!=0)) continue;
         pWeight = weight_;
-	if(!useValueMap_ && itPF->pt() != 0) pWeight = pWeight*(phoCands[iPho]->pt()/itPF->pt());
-	if(!useValueMap_ && itPF->pt() == 0) pVec.SetPxPyPzE(phoCands[iPho]->px()*pWeight,phoCands[iPho]->py()*pWeight,phoCands[iPho]->pz()*pWeight,phoCands[iPho]->energy()*pWeight);
+	if(!useValueMap_ && itPF->pt() != 0) pWeight = pWeight*(pho->pt()/itPF->pt());
+	if(!useValueMap_ && itPF->pt() == 0) pVec.SetPxPyPzE(pho->px()*pWeight,pho->py()*pWeight,pho->pz()*pWeight,pho->energy()*pWeight);
         foundPhoIndex.insert(iPho);
       }
     } else { 
       int iPho = -1;
-      for(std::vector<uint16_t>::const_iterator itPho = phoIndx.begin(); itPho!=phoIndx.end(); itPho++) {
+      for(unsigned keyInPuppiColl : phoIndx) {
         iPho++;
-        if(pupCol->refAt(iPF).key() != *itPho) continue;
+        if(keyInPuppiColl != iPF) continue;
         pWeight = weight_;
         if(!useValueMap_ && itPF->pt() != 0) pWeight = pWeight*(phoCands[iPho]->pt()/itPF->pt());
 	if(!useValueMap_ && itPF->pt() == 0) pVec.SetPxPyPzE(phoCands[iPho]->px()*pWeight,phoCands[iPho]->py()*pWeight,phoCands[iPho]->pz()*pWeight,phoCands[iPho]->energy()*pWeight);
