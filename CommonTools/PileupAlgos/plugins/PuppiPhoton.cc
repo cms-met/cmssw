@@ -22,6 +22,7 @@
 #include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrackFwd.h"
 #include "DataFormats/Common/interface/Association.h"
+#include "DataFormats/Common/interface/RefToPtr.h"
 #include "DataFormats/Math/interface/deltaR.h"
 //Main File
 #include "CommonTools/PileupAlgos/plugins/PuppiPhoton.h"
@@ -65,16 +66,18 @@ void PuppiPhoton::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   edm::Handle<edm::ValueMap<std::vector<reco::PFCandidateRef>>> reco2pf;
   if(!runOnMiniAOD_) iEvent.getByToken(reco2pf_, reco2pf);
 
-  // Get Candidate View that was used to produce pupCol (PFProduct itself can be e.g. a PtrVector)
+  // Get a View of the Candidates that were used to produce pupCol (PFProduct itself can be e.g. a PtrVector)
+  // This collection (or its base, in case the collection is a PtrVector) must be what the e/g footprint
+  // candidates point to, if usePFRef_ == true.
   edm::Handle<CandidateView> hPFProduct;
   iEvent.getByToken(tokenPFCandidates_,hPFProduct);
 
-  // Make a mapping of (index in original PF collection) -> (index in puppi collection).
+  // Make a mapping of (ptr to original PF object) -> (index in puppi collection).
   // This is a trivial map, unless the collection used to make puppi has gone through
-  // some kind of filtering (as in the case with the muon cleaning for 03Feb2017 reMINIAOD).
-  std::map<unsigned, unsigned> originalKeyToPuppiKey;
+  // some kind of filtering (as in the case when the bad muon cleaning is applied).
+  std::map<reco::CandidatePtr, unsigned> originalCandToPuppiKey;
   for (unsigned iPF(0); iPF != hPFProduct->size(); ++iPF)
-    originalKeyToPuppiKey[hPFProduct->ptrAt(iPF).key()] = iPF;
+    originalCandToPuppiKey[hPFProduct->ptrAt(iPF)] = iPF;
 
   edm::Handle<CandidateView> hPuppiProduct;
   iEvent.getByToken(tokenPuppiCandidates_,hPuppiProduct);
@@ -90,8 +93,13 @@ void PuppiPhoton::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
       if(pPho != 0) {
         for( const edm::Ref<pat::PackedCandidateCollection> & ref : pPho->associatedPackedPFCandidates() ) {
 	  if(fabs(ref->eta()) < eta_ ) {
-            unsigned puppiKey(originalKeyToPuppiKey[ref.key()]);
-	    phoIndx.push_back(puppiKey);
+            auto&& kItr(originalCandToPuppiKey.find(edm::refToPtr(ref)));
+            if (kItr == originalCandToPuppiKey.end()) {
+              edm::LogError("PuppiPhoton") << "Associated packed PF candidate of the photon is not in the original PF candidates list";
+              throw cms::Exception("InvalidRef");
+            }
+
+	    phoIndx.push_back(kItr->second);
 	    phoCands.push_back(ref.get());
 	  }
         }
@@ -101,16 +109,26 @@ void PuppiPhoton::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
       if(pElectron != 0) {
         for( const edm::Ref<pat::PackedCandidateCollection> & ref : pElectron->associatedPackedPFCandidates() )
 	  if(fabs(ref->eta()) < eta_ )  {
-            unsigned puppiKey(originalKeyToPuppiKey[ref.key()]);
-	    phoIndx.push_back(puppiKey);
+            auto&& kItr(originalCandToPuppiKey.find(edm::refToPtr(ref)));
+            if (kItr == originalCandToPuppiKey.end()) {
+              edm::LogError("PuppiPhoton") << "Associated packed PF candidate of the electron is not in the original PF candidates list";
+              throw cms::Exception("InvalidRef");
+            }
+
+	    phoIndx.push_back(kItr->second);
 	    phoCands.push_back(ref.get());
 	  }
       }
     } else {
       for( const edm::Ref<std::vector<reco::PFCandidate> > & ref : (*reco2pf)[phoCol->ptrAt(iC)] ) {
 	  if(fabs(ref->eta()) < eta_ )  {
-            unsigned puppiKey(originalKeyToPuppiKey[ref.key()]);
-	    phoIndx.push_back(puppiKey);
+            auto&& kItr(originalCandToPuppiKey.find(edm::refToPtr(ref)));
+            if (kItr == originalCandToPuppiKey.end()) {
+              edm::LogError("PuppiPhoton") << "Footprint of the photon is not in the original PF candidates list";
+              throw cms::Exception("InvalidRef");
+            }
+
+	    phoIndx.push_back(kItr->second);
 	    phoCands.push_back(ref.get());
 	  }
       }
@@ -182,7 +200,11 @@ void PuppiPhoton::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   for(unsigned int ic=0, nc = pupCol->size(); ic < nc; ++ic) {
       reco::CandidatePtr pkref( oh, ic );
       values[ic] = pkref;
-  }  
+  }
+
+  // Note that this ValueMap is unusable if hPFProduct is actually a PtrVector (e.g. again in the case of muon-cleaned PF candidates).
+  // In such a case, the key type of this ValueMap would be a reference to an element in the PtrVector, which does not exist.
+  // It is probably better to use the puppi candidates as the key collection.
   std::auto_ptr<edm::ValueMap<reco::CandidatePtr> > pfMap_p(new edm::ValueMap<reco::CandidatePtr>());
   edm::ValueMap<reco::CandidatePtr>::Filler filler(*pfMap_p);
   filler.insert(hPFProduct, values.begin(), values.end());
