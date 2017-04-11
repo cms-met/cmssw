@@ -11,5 +11,4 @@ cloneGlobalMuonTagger = badGlobalMuonTagger.clone(
     selectClones = True
 )
 
-noBadGlobalMuons = cms.Sequence(~cloneGlobalMuonTagger + ~badGlobalMuonTagger)
-    
+noBadGlobalMuons = cms.Sequence(cloneGlobalMuonTagger + badGlobalMuonTagger)
